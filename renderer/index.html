@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=800, initial-scale=1.0">
+    <title>osu! Map Tracker</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="header-container">
+        <span style="display: flex; align-items: center; gap: 0;">
+            <h1 style="color: var(--accent-primary); margin-right: 0;">m</h1>
+            <h1 style="margin-left: 0;">osu!</h1>
+        </span>
+        <nav class="header-nav" aria-label="Primary Actions">
+            <div class="upload-dropdown" id="uploadDropdown">
+                <button type="button" class="primary-button" id="osuUploadBtn">Import .osu File</button>
+                <button type="button" class="primary-button upload-caret" id="uploadMenuToggle" aria-expanded="false"
+                    aria-label="More upload options">
+                    <svg viewBox="0 0 320 512">
+                        <path
+                            d="M311.1 233.4c12.5 12.5 12.5 32.8 0 45.3l-192 192c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L243.2 256 73.9 86.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l192 192z" />
+                    </svg>
+                </button>
+                <div class="upload-menu" id="uploadMenu" role="menu">
+                    <button type="button" class="upload-option" data-upload="mapper">Import all maps from a specific
+                        mapper</button>
+                    <button type="button" class="upload-option" data-upload="folder">Import all maps in song folder (may
+                        take a long time)</button>
+                </div>
+            </div>
+            <button type="button" class="primary-button icon-button refresh-btn" id="refreshBtn"
+                aria-label="Refresh last directory" title="Refresh last directory">
+                <svg viewBox="0 0 512 512">
+                    <path fill="currentColor"
+                        d="M65.9 228.5c13.3-93 93.4-164.5 190.1-164.5 53 0 101 21.5 135.8 56.2 .2 .2 .4 .4 .6 .6l7.6 7.2-47.9 0c-17.7 0-32 14.3-32 32s14.3 32 32 32l128 0c17.7 0 32-14.3 32-32l0-128c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 53.4-11.3-10.7C390.5 28.6 326.5 0 256 0 127 0 20.3 95.4 2.6 219.5 .1 237 12.2 253.2 29.7 255.7s33.7-9.7 36.2-27.1zm443.5 64c2.5-17.5-9.7-33.7-27.1-36.2s-33.7 9.7-36.2 27.1c-13.3 93-93.4 164.5-190.1 164.5-53 0-101-21.5-135.8-56.2-.2-.2-.4-.4-.6-.6l-7.6-7.2 47.9 0c17.7 0 32-14.3 32-32s14.3-32-32-32L32 320c-8.5 0-16.7 3.4-22.7 9.5S-.1 343.7 0 352.3l1 127c.1 17.7 14.6 31.9 32.3 31.7S65.2 496.4 65 478.7l-.4-51.5 10.7 10.1c46.3 46.1 110.2 74.7 180.7 74.7 129 0 235.7-95.4 253.4-219.5z" />
+                </svg>
+            </button>
+            <button type="button" class="primary-button icon-button settings-btn" id="settingsBtn"
+                aria-label="Settings">
+                <svg viewBox="0 0 24 24">
+                    <path
+                        d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.35 19.43,11.03L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.97 19.05,5.05L16.56,6.05C16.04,5.66 15.47,5.34 14.86,5.12L14.47,2.44C14.43,2.21 14.24,2.05 14,2.05H10C9.76,2.05 9.57,2.21 9.53,2.44L9.14,5.12C8.53,5.34 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.97 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11.03C4.53,11.35 4.5,11.67 4.5,12C4.5,11.67 4.53,11.35 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.95C7.96,18.34 8.53,18.66 9.14,18.88L9.53,21.56C9.57,21.79 9.76,21.95 10,21.95H14C14.24,21.95 14.43,21.79 14.47,21.56L14.86,18.88C15.47,18.66 16.04,18.34 16.56,17.95L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" />
+                </svg>
+            </button>
+        </nav>
+    </div>
+
+    <div class="sticky-header-container">
+        <div class="tabs-bar">
+            <button type="button" class="tab-button is-active" data-tab="all">
+                All
+                <span class="tab-count" id="allCount">0</span>
+            </button>
+            <button type="button" class="tab-button" data-tab="todo">
+                Todo
+                <span class="tab-count" id="todoCount">0</span>
+            </button>
+            <button type="button" class="tab-button" data-tab="completed">
+                Completed
+                <span class="tab-count" id="completedCount">0</span>
+            </button>
+            <div class="tabs-actions">
+                <button type="button" class="secondary-button icon-button" id="menuToggle" aria-expanded="false"
+                    aria-label="Filter">
+                    <svg class="icon-button-icon" viewBox="0 0 512 512" aria-hidden="true">
+                        <path
+                            d="M32 64C19.1 64 7.4 71.8 2.4 83.8S.2 109.5 9.4 118.6L192 301.3 192 416c0 8.5 3.4 16.6 9.4 22.6l64 64c9.2 9.2 22.9 11.9 34.9 6.9S320 492.9 320 480l0-178.7 182.6-182.6c9.2-9.2 11.9-22.9 6.9-34.9S492.9 64 480 64L32 64z" />
+                    </svg>
+                </button>
+                <button type="button" class="secondary-button is-hidden" id="clearAllBtn">Clear all</button>
+            </div>
+        </div>
+
+        <div class="header-menu" id="headerMenu" aria-label="Filter">
+            <div class="header-menu-inner">
+                <div class="sort-dropdown" id="sortDropdown">
+                    <button type="button" class="sort-trigger" id="sortTrigger" aria-expanded="false">
+                        <span class="sort-label" id="sortLabel">Date added</span>
+                        <span class="sort-direction" id="sortDirection">
+                            <svg viewBox="0 0 448 512">
+                                <path
+                                    d="M201.4 406.6c12.5 12.5 32.8 12.5 45.3 0l192-192c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L224 338.7 54.6 169.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3l192 192z" />
+                            </svg>
+                        </span>
+                    </button>
+                    <div class="sort-menu" id="sortMenu" role="menu">
+                        <button type="button" class="sort-option" data-sort="dateAdded" data-label="Date added">Date
+                            added</button>
+                        <button type="button" class="sort-option" data-sort="dateModified"
+                            data-label="Date modified">Date
+                            modified</button>
+                        <button type="button" class="sort-option" data-sort="name" data-label="Name">Name</button>
+                        <button type="button" class="sort-option" data-sort="progress"
+                            data-label="Progress">Progress</button>
+                    </div>
+                </div>
+                <div class="control-group">
+                    <label class="control-label" for="searchInput">Search</label>
+                    <input id="searchInput" class="control-input" type="search" placeholder="Search maps..." />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="section-container">
+            <div class="loading-overlay is-hidden" id="loadingSpinner" aria-live="polite" aria-label="Loading">
+                <div class="loading-content">
+                    <svg class="loading-spinner" viewBox="0 0 40 40" height="40" width="40" aria-hidden="true">
+                        <circle class="spinner-track" cx="20" cy="20" r="17.5" pathlength="100" stroke-width="5px"
+                            fill="none" />
+                        <circle class="spinner-car" cx="20" cy="20" r="17.5" pathlength="100" stroke-width="5px"
+                            fill="none" />
+                    </svg>
+                    <div class="loading-progress is-hidden" id="loadingProgress">
+                        <div class="progress-bar">
+                            <div class="progress-bar-fill" id="progressBarFill"></div>
+                        </div>
+                        <p class="progress-label" id="progressLabel">Processing files...</p>
+                    </div>
+                </div>
+            </div>
+            <p class="empty-state" id="emptyState">No maps here~</p>
+            <div class="list-container" id="listContainer"></div>
+        </div>
+    </div>
+
+    <dialog class="prompt-dialog" id="clearAllPrompt">
+        <form method="dialog" class="prompt-dialog-form">
+            <p class="prompt-dialog-label">Clear All Maps?</p>
+            <p class="settings-description">
+                This will stop all current map processing and remove all imported maps from your current list.
+                You will have to wait for the map durations to be re-analyzed if you re-import them.
+                <br><br>
+                The maps in your Todo and Completed lists will be saved.
+            </p>
+            <div class="prompt-dialog-actions">
+                <button type="button" class="secondary-button" id="clearAllCancel">Cancel</button>
+                <button type="submit" class="primary-button danger" id="clearAllConfirm">Clear Everything</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog class="prompt-dialog" id="welcomePrompt">
+        <form method="dialog" class="prompt-dialog-form">
+            <p class="prompt-dialog-label">Hi there!</p>
+            <p class="settings-description">
+                Stay organized and track your work in progress maps.
+                <br>
+                Click anywhere on a map's timeline to listen and seek through its audio instantly.
+            </p>
+            <div class="prompt-dialog-actions" style="justify-content: center;">
+                <button type="button" class="primary-button" id="welcomeContinueBtn">Continue</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog class="prompt-dialog" id="firstRunPrompt">
+        <form method="dialog" class="prompt-dialog-form">
+            <p class="prompt-dialog-label">How would you like to import your maps?</p>
+            <p class="settings-description" style="margin-top: -0.5rem; margin-bottom: 0.5rem;">Choose to import all
+                maps from
+                your Songs folder, or only maps by a particular mapper.</p>
+            <div class="prompt-dialog-actions">
+                <button type="button" class="secondary-button" id="firstRunAllBtn">Import all maps</button>
+                <button type="button" class="primary-button" id="firstRunMapperBtn">Only maps by a mapper</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog class="prompt-dialog" id="mapperPrompt">
+        <form method="dialog" class="prompt-dialog-form">
+            <label class="prompt-dialog-label" for="mapperNameInput">Enter the mapper name:</label>
+            <input class="prompt-dialog-input" id="mapperNameInput" type="text" placeholder="Mapper name..."
+                autocomplete="off" />
+            <div class="prompt-dialog-actions">
+                <button type="button" class="secondary-button" id="mapperPromptCancel">Cancel</button>
+                <button type="submit" class="primary-button" id="mapperPromptConfirm">Save</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog class="prompt-dialog" id="songsDirPrompt">
+        <form method="dialog" class="prompt-dialog-form">
+            <p class="prompt-dialog-label">Locate your osu! Songs folder.</p>
+            <p class="settings-description" style="margin-top: -0.5rem; margin-bottom: 0.5rem;">We'll use this to
+                scan for your maps.</p>
+            <div class="prompt-dialog-actions">
+                <button type="button" class="secondary-button" id="songsDirPromptCancel">Cancel</button>
+                <button type="submit" class="primary-button" id="songsDirPromptConfirm">Select Folder</button>
+            </div>
+        </form>
+    </dialog>
+
+    <dialog class="prompt-dialog settings-dialog" id="settingsDialog">
+        <div class="settings-header">
+            <h2 class="settings-title">Settings</h2>
+            <button type="button" class="icon-button close-settings-btn" id="closeSettingsBtn" aria-label="Close">
+                <svg viewBox="0 0 384 512">
+                    <path
+                        d="M342.6 150.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L192 210.7 86.6 105.4c-12.5-12.5-32.8-12.5-45.3 0s-12.5 32.8 0 45.3L146.7 256 41.4 361.4c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L192 301.3 297.4 406.6c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L237.3 256 342.6 150.6z" />
+                </svg>
+            </button>
+        </div>
+        <div class="settings-content">
+            <div class="settings-section">
+                <div class="settings-item">
+                    <div class="settings-info">
+                        <p class="settings-label">Songs directory</p>
+                        <p class="settings-description" id="songsDirLabel">Not selected</p>
+                    </div>
+                    <button type="button" class="secondary-button" id="selectSongsDirBtn">Select folder</button>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-info">
+                        <p class="settings-label">Ignore start and breaks</p>
+                        <p class="settings-description">Ignore the leading silence and treat breaks as populated
+                            time
+                            when calculating map progress.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="ignoreStartAndBreaks">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-info">
+                        <p class="settings-label">Hide guest difficulties in your own mapsets</p>
+                        <p class="settings-description">When enabled, hide selected mapper's maps with difficulty
+                            names
+                            that contain "'s" (e.g., "guest's Extra"). May not be 100% accurate.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="ignoreGuestDifficulties">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-info">
+                        <p class="settings-label">Auto-rescan by mapper on app startup</p>
+                        <p class="settings-description">Automatically scan for new maps from a specific mapper.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="autoRescanMapper">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="settings-item is-indented">
+                    <div class="settings-info">
+                        <p class="settings-label">Mapper name</p>
+                        <p class="settings-description">The mapper name used for scanning and refreshing.</p>
+                    </div>
+                    <input type="text" class="control-input" id="rescanMapperName" placeholder="Mapper name...">
+                </div>
+                <div class="settings-item">
+                    <div class="settings-info">
+                        <p class="settings-label">Auto-detect new maps on app startup</p>
+                        <p class="settings-description">Automatically add new maps when new folders are detected in
+                            the songs directory.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="autoDetectMaps">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-info">
+                        <p class="settings-label">Preview volume</p>
+                        <p class="settings-description">Adjust the volume of the song preview.</p>
+                    </div>
+                    <div class="slider-control">
+                        <input type="range" id="previewVolume" min="0" max="1" step="0.01" value="0.5">
+                        <span id="volumeValue">50%</span>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-info">
+                        <p class="settings-label">List item height</p>
+                        <p class="settings-description">Adjust the height of each map in the list.</p>
+                    </div>
+                    <div class="slider-control">
+                        <input type="range" id="listItemHeightSlider" min="170" max="300" step="10" value="240">
+                        <span id="listItemHeightValue">240px</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </dialog>
+
+    <script src="renderer.js"></script>
+</body>
+
+</html>
