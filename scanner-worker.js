@@ -1,47 +1,26 @@
-/**
- * FULLY OPTIMIZED OSU! MAP SCANNER WORKER
- * 
- * Implements all optimization recommendations:
- * ✓ Single-pass unified parser
- * ✓ Zero redundant file operations
- * ✓ Batch stat operations
- * ✓ Pre-allocated TypedArrays
- * ✓ String operation optimizations
- * ✓ Progress reporting
- * ✓ Comprehensive error handling
- * ✓ Memory-efficient parsing
- * 
- * Performance: ~70-80% faster, ~65-75% less memory usage
- */
-
 const { parentPort, workerData } = require('worker_threads');
 const fs = require('fs/promises');
 
-// ============================================================================
-// CONSTANTS & CONFIGURATION
-// ============================================================================
 
-const BUFFER_SIZE = 8192; // Read header buffer size
-const ESTIMATED_HIT_OBJECTS_PER_KB = 20; // Rough estimate for pre-allocation
-const PROGRESS_REPORT_INTERVAL = 25; // Report progress every N files
+const BUFFER_SIZE = 8192;
+const ESTIMATED_HIT_OBJECTS_PER_KB = 20;
+const PROGRESS_REPORT_INTERVAL = 25;
 
-// Character codes for fast comparison without string conversion
 const CHAR_CODES = {
     NEWLINE: 10,
     CARRIAGE_RETURN: 13,
     SPACE: 32,
     TAB: 9,
-    OPEN_BRACKET: 91,    // [
-    CLOSE_BRACKET: 93,   // ]
-    COLON: 58,           // :
-    COMMA: 44,           // ,
-    QUOTE: 34,           // "
-    SLASH: 47,           // /
-    ZERO: 48,            // 0
-    TWO: 50,             // 2
+    OPEN_BRACKET: 91,
+    CLOSE_BRACKET: 93,
+    COLON: 58,
+    COMMA: 44,
+    QUOTE: 34,
+    SLASH: 47,
+    ZERO: 48,
+    TWO: 50,
 };
 
-// Section identifiers (case-insensitive)
 const SECTIONS = {
     NONE: 0,
     GENERAL: 1,
@@ -54,9 +33,6 @@ const SECTIONS = {
     HIT_OBJECTS: 8
 };
 
-// ============================================================================
-// OPTIMIZED PARSING UTILITIES
-// ============================================================================
 
 /**
  * Fast integer parsing from string without creating substrings
@@ -70,21 +46,18 @@ const fastParseInt = (str, start, end) => {
     let sign = 1;
     let i = start;
 
-    // Skip whitespace
     while (i < end && (str.charCodeAt(i) === CHAR_CODES.SPACE || str.charCodeAt(i) === CHAR_CODES.TAB)) {
         i++;
     }
 
-    // Handle sign
     const charCode = str.charCodeAt(i);
-    if (charCode === 45) { // '-'
+    if (charCode === 45) {
         sign = -1;
         i++;
-    } else if (charCode === 43) { // '+'
+    } else if (charCode === 43) {
         i++;
     }
 
-    // Parse digits
     let hasDigit = false;
     while (i < end) {
         const digit = str.charCodeAt(i) - CHAR_CODES.ZERO;
@@ -105,13 +78,11 @@ const fastParseInt = (str, start, end) => {
  * @returns {string} Trimmed substring
  */
 const extractTrimmed = (str, start, end) => {
-    // Trim leading whitespace
     while (start < end && (str.charCodeAt(start) === CHAR_CODES.SPACE ||
         str.charCodeAt(start) === CHAR_CODES.TAB)) {
         start++;
     }
 
-    // Trim trailing whitespace
     while (end > start && (str.charCodeAt(end - 1) === CHAR_CODES.SPACE ||
         str.charCodeAt(end - 1) === CHAR_CODES.TAB)) {
         end--;
@@ -134,7 +105,6 @@ const matchesAt = (str, pos, match) => {
         const charCode = str.charCodeAt(pos + i);
         const matchCode = match.charCodeAt(i);
 
-        // Convert to lowercase if needed and compare
         const lowerCharCode = (charCode >= 65 && charCode <= 90) ? charCode + 32 : charCode;
         if (lowerCharCode !== matchCode) return false;
     }
@@ -190,9 +160,6 @@ const isImageExtension = (filename) => {
         ext === 'webp' || ext === 'gif' || ext === 'bmp';
 };
 
-// ============================================================================
-// SINGLE-PASS UNIFIED PARSER
-// ============================================================================
 
 /**
  * Parse entire .osu file in a single pass
@@ -222,7 +189,6 @@ const parseOsuFile = (content) => {
     let sliderMultiplier = 1.0;
     const timingPoints = [];
 
-    // Pre-allocate hit times array based on file size
     const estimatedHitObjects = Math.ceil(content.length / 1024 * ESTIMATED_HIT_OBJECTS_PER_KB);
     let hitStartsArray = new Int32Array(Math.max(estimatedHitObjects, 100));
     let hitEndsArray = new Int32Array(Math.max(estimatedHitObjects, 100));
@@ -232,20 +198,16 @@ const parseOsuFile = (content) => {
     let section = SECTIONS.NONE;
     let lineStart = 0;
 
-    // Skip UTF-8 BOM if present
     if (content.charCodeAt(0) === 0xFEFF) {
         lineStart = 1;
     }
 
     const contentLength = content.length;
 
-    // Single pass through entire file
     for (let i = 0; i <= contentLength; i++) {
         const char = i < contentLength ? content.charCodeAt(i) : CHAR_CODES.NEWLINE;
 
-        // End of line or end of file
         if (char === CHAR_CODES.NEWLINE || char === CHAR_CODES.CARRIAGE_RETURN || i === contentLength) {
-            // Handle CRLF (Windows line endings)
             if (char === CHAR_CODES.CARRIAGE_RETURN &&
                 i + 1 < contentLength &&
                 content.charCodeAt(i + 1) === CHAR_CODES.NEWLINE) {
@@ -254,14 +216,12 @@ const parseOsuFile = (content) => {
 
             let lineEnd = i;
 
-            // Trim whitespace from start
             while (lineStart < lineEnd &&
                 (content.charCodeAt(lineStart) === CHAR_CODES.SPACE ||
                     content.charCodeAt(lineStart) === CHAR_CODES.TAB)) {
                 lineStart++;
             }
 
-            // Trim whitespace from end
             while (lineEnd > lineStart &&
                 (content.charCodeAt(lineEnd - 1) === CHAR_CODES.SPACE ||
                     content.charCodeAt(lineEnd - 1) === CHAR_CODES.TAB ||
@@ -272,13 +232,11 @@ const parseOsuFile = (content) => {
 
             const lineLength = lineEnd - lineStart;
 
-            // Skip empty lines
             if (lineLength === 0) {
                 lineStart = i + 1;
                 continue;
             }
 
-            // Skip comment lines
             if (lineLength >= 2 &&
                 content.charCodeAt(lineStart) === CHAR_CODES.SLASH &&
                 content.charCodeAt(lineStart + 1) === CHAR_CODES.SLASH) {
@@ -286,7 +244,6 @@ const parseOsuFile = (content) => {
                 continue;
             }
 
-            // Check for section headers [SectionName]
             if (content.charCodeAt(lineStart) === CHAR_CODES.OPEN_BRACKET &&
                 content.charCodeAt(lineEnd - 1) === CHAR_CODES.CLOSE_BRACKET) {
                 section = identifySection(content, lineStart + 1, lineEnd - 1);
@@ -294,7 +251,6 @@ const parseOsuFile = (content) => {
                 continue;
             }
 
-            // Parse based on current section
             switch (section) {
                 case SECTIONS.METADATA:
                     parseMetadataLine(content, lineStart, lineEnd, result.metadata);
@@ -325,16 +281,13 @@ const parseOsuFile = (content) => {
                 case SECTIONS.HIT_OBJECTS:
                     const object = parseHitObject(content, lineStart, lineEnd, sliderMultiplier, timingPoints);
                     if (object !== null) {
-                        // Filling gaps between sliders and the next object as requested
                         if (hitCount > 0) {
                             const prevType = hitTypesArray[hitCount - 1];
-                            // Using the type to detect if we should connect (bit 1 is slider, value 2)
                             if (prevType & 2) {
                                 hitEndsArray[hitCount - 1] = Math.max(hitEndsArray[hitCount - 1], object.start);
                             }
                         }
 
-                        // Grow array if needed
                         if (hitCount >= hitStartsArray.length) {
                             const newStarts = new Int32Array(hitStartsArray.length * 2);
                             const newEnds = new Int32Array(hitEndsArray.length * 2);
@@ -654,10 +607,6 @@ const parseHitObjectTime = (content, start, end) => {
     return null;
 };
 
-// ============================================================================
-// OPTIMIZED FILE OPERATIONS
-// ============================================================================
-
 /**
  * Read only the header portion of a file (first 8KB)
  * Used for quick metadata extraction when filtering by mapper
@@ -685,8 +634,7 @@ const readOsuHeader = async (filePath) => {
 };
 
 /**
- * FIXED: Extract metadata from header using reliable parsing logic
- * Uses the proven approach from original code to ensure correctness
+ * Parse creator and version from header content
  * 
  * @param {string} content - Header content
  * @returns {Object} { creator: string, version: string }
@@ -727,10 +675,6 @@ const parseMetadataFromHeader = (content) => {
     return meta;
 };
 
-// ============================================================================
-// BATCH FILE OPERATIONS
-// ============================================================================
-
 /**
  * Batch stat operations with concurrency limit
  * Prevents overwhelming the filesystem with too many concurrent operations
@@ -766,17 +710,8 @@ const batchStatFiles = async (filePaths, concurrency = 100) => {
     return results;
 };
 
-// ============================================================================
-// MAIN PROCESSING FUNCTION
-// ============================================================================
-
 /**
- * Process all files with comprehensive optimizations
- * - Batch stat operations
- * - Incremental progress reporting
- * - Smart caching
- * - Efficient filtering
- * - Detailed error tracking
+ * Process all files assigned to this worker
  */
 const processFiles = async () => {
     const { filePaths, mapperName, knownFiles } = workerData;
@@ -791,15 +726,7 @@ const processFiles = async () => {
     let cachedCount = 0;
     let errorCount = 0;
 
-    // ========================================================================
-    // PHASE 1: Batch stat all files
-    // ========================================================================
-
     const statResults = await batchStatFiles(filePaths);
-
-    // ========================================================================
-    // PHASE 2: Process each file
-    // ========================================================================
 
     for (let i = 0; i < statResults.length; i++) {
         const statResult = statResults[i];
@@ -820,14 +747,7 @@ const processFiles = async () => {
         const mtime = stat.mtimeMs;
 
         try {
-            // ================================================================
-            // OPTIMIZATION: Check cache first (skip unchanged files)
-            // ================================================================
-
-            // IMPORTANT: Cached files must ALSO be filtered by mapper!
-            // The cache only validates that the FILE hasn't changed,
-            // but we still need to check if it matches the current filter.
-
+            // Check if file is cached
             if (knownFiles && knownFiles[filePath] === mtime) {
                 // File is cached, but we still need to check mapper filter
                 if (needle) {
@@ -882,10 +802,6 @@ const processFiles = async () => {
                 continue;
             }
 
-            // ================================================================
-            // OPTIMIZATION: For mapper filtering, read header first
-            // ================================================================
-
             if (needle) {
                 const header = await readOsuHeader(filePath);
                 const metadata = parseMetadataFromHeader(header);
@@ -912,10 +828,6 @@ const processFiles = async () => {
                     continue;
                 }
             }
-
-            // ================================================================
-            // OPTIMIZATION: Read full file and parse in one pass
-            // ================================================================
 
             const content = await fs.readFile(filePath, 'utf8');
             const parsed = parseOsuFile(content);
@@ -963,10 +875,6 @@ const processFiles = async () => {
         }
     }
 
-    // ========================================================================
-    // PHASE 3: Send final results
-    // ========================================================================
-
     parentPort.postMessage({
         type: 'complete',
         results,
@@ -980,10 +888,6 @@ const processFiles = async () => {
         }
     }, transferList);
 };
-
-// ============================================================================
-// WORKER ENTRY POINT
-// ============================================================================
 
 // Start processing when worker is loaded
 processFiles().catch(error => {

@@ -1,13 +1,3 @@
-/**
- * FIXED MAIN.JS
- * 
- * Critical fix: Worker message handling now properly handles the new message format
- * from the optimized scanner-worker that sends progress updates AND a final complete message.
- * 
- * The bug was: worker.on('message', resolve) resolved on the FIRST message (progress),
- * ignoring the actual results in the 'complete' message!
- */
-
 const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const fs = require('fs/promises');
 const path = require('path');
