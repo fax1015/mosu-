@@ -31,3 +31,8 @@ contextBridge.exposeInMainWorld('appInfo', {
 	checkForUpdates: () => ipcRenderer.invoke('check-for-updates'),
 	openExternalUrl: (url) => ipcRenderer.invoke('open-external-url', url),
 });
+
+// Embed sync API
+contextBridge.exposeInMainWorld('embedSyncApi', {
+	sync: (url, apiKey, data) => ipcRenderer.invoke('embed-sync', url, apiKey, data),
+});

@@ -198,6 +198,11 @@ const GlobalDatePicker = {
         this.popover.appendChild(footer);
     }
 };
+// Generate a unique user ID for embed syncing
+const generateUserId = () => {
+    return 'user_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 15);
+};
+
 let settings = {
     autoDetectMaps: false,
     autoRescanMapper: false,
@@ -210,7 +215,16 @@ let settings = {
     // First-run setup state
     initialSetupDone: false,
     // 'all' | 'mapper' | null - remembers user's first-run import choice
-    initialImportChoice: null
+    initialImportChoice: null,
+    // Unique user ID for embed syncing (generated on first run)
+    userId: null,
+    // Embed sync settings
+    embedApiKey: null,
+    embedSyncUrl: 'https://mosu-embed-site.vercel.app',
+    embedShowTodoList: true,
+    embedShowCompletedList: true,
+    embedShowProgressStats: true,
+    embedLastSynced: null
 };
 
 // Returns the mapper name that should be used for backend operations.
@@ -1280,7 +1294,11 @@ const buildListItem = (metadata, index) => {
                 const bID = normalized.beatmapSetID;
                 const isUrl = String(bID).startsWith('http');
                 const url = isUrl ? bID : `https://osu.ppy.sh/beatmapsets/${bID}`;
-                window.open(url, '_blank');
+                if (window.appInfo?.openExternalUrl) {
+                    window.appInfo.openExternalUrl(url);
+                } else {
+                    window.open(url, '_blank');
+                }
             };
             extraActions.appendChild(openWebBtn);
         }
@@ -1826,7 +1844,166 @@ const scheduleSave = () => {
     if (saveTimer) {
         window.clearTimeout(saveTimer);
     }
-    saveTimer = window.setTimeout(saveToStorage, 500);
+    saveTimer = window.setTimeout(() => {
+        saveToStorage();
+        // Trigger embed sync after save (rate-limited)
+        if (settings.embedApiKey) {
+            scheduleEmbedSync();
+        }
+    }, 500);
+};
+
+// ============================================
+// Embed Sync Module
+// ============================================
+const EMBED_SYNC_RATE_LIMIT_MS = 30_000; // 30 seconds
+let embedSyncTimer = null;
+let lastEmbedSyncTime = 0;
+
+// Generate API key for embed sync
+const generateApiKey = () => {
+    return 'sk_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 20);
+};
+
+// Build the condensed embed payload from current data
+const buildEmbedPayload = () => {
+    const todoItems = todoIds
+        .map(id => beatmapItems.find(item => item.id === id))
+        .filter(Boolean)
+        .map(item => ({
+            id: item.id,
+            title: item.title || 'Unknown',
+            artist: item.artist || 'Unknown',
+            creator: item.creator || 'Unknown',
+            version: item.version || 'Unknown',
+            progress: item.progress || 0,
+            deadline: item.deadline || null,
+            beatmapSetID: item.beatmapSetID || null,
+            coverUrl: item.beatmapSetID ? `https://assets.ppy.sh/beatmaps/${item.beatmapSetID}/covers/cover.jpg` : null
+        }));
+
+    const completedItems = doneIds
+        .map(id => beatmapItems.find(item => item.id === id))
+        .filter(Boolean)
+        .map(item => ({
+            id: item.id,
+            title: item.title || 'Unknown',
+            artist: item.artist || 'Unknown',
+            creator: item.creator || 'Unknown',
+            version: item.version || 'Unknown',
+            progress: 100,
+            beatmapSetID: item.beatmapSetID || null,
+            coverUrl: item.beatmapSetID ? `https://assets.ppy.sh/beatmaps/${item.beatmapSetID}/covers/cover.jpg` : null
+        }));
+
+    const totalProgress = beatmapItems.length > 0
+        ? beatmapItems.reduce((sum, item) => sum + (item.progress || 0), 0) / beatmapItems.length
+        : 0;
+
+    return {
+        version: 1,
+        userid: settings.userId,
+        lastUpdated: new Date().toISOString(),
+        settings: {
+            showTodoList: settings.embedShowTodoList,
+            showCompletedList: settings.embedShowCompletedList,
+            showProgressStats: settings.embedShowProgressStats
+        },
+        stats: {
+            totalMaps: beatmapItems.length,
+            todoCount: todoIds.length,
+            completedCount: doneIds.length,
+            overallProgress: Math.round(totalProgress * 10) / 10
+        },
+        todoItems,
+        completedItems
+    };
+};
+
+// Helper to persist settings from top-level code (saveSettings lives inside DOMContentLoaded)
+const persistSettings = () => {
+    try {
+        localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+    } catch (e) { /* storage full */ }
+};
+
+// Perform the sync to the embed site
+const performEmbedSync = async () => {
+    if (!settings.embedApiKey) {
+        settings.embedApiKey = generateApiKey();
+        persistSettings();
+    }
+
+    const payload = buildEmbedPayload();
+    const syncUrl = `${settings.embedSyncUrl}/api/sync`;
+
+    console.log('Starting embed sync to:', syncUrl);
+
+    try {
+        const result = await window.embedSyncApi.sync(syncUrl, settings.embedApiKey, payload);
+        
+        console.log('Sync result:', result);
+
+        if (result.success && result.data?.success) {
+            settings.embedLastSynced = Date.now();
+            persistSettings();
+            updateEmbedSyncStatus('synced');
+        } else {
+            const errorMsg = result.data?.error || result.error || 'Unknown error';
+            console.error('Embed sync failed:', errorMsg);
+            updateEmbedSyncStatus('error', errorMsg);
+        }
+    } catch (err) {
+        console.error('Embed sync error:', err);
+        updateEmbedSyncStatus('error', err.message);
+    }
+};
+
+// Schedule embed sync with rate limiting
+const scheduleEmbedSync = () => {
+    if (embedSyncTimer) {
+        clearTimeout(embedSyncTimer);
+    }
+
+    const timeSinceLastSync = Date.now() - lastEmbedSyncTime;
+    const delay = Math.max(0, EMBED_SYNC_RATE_LIMIT_MS - timeSinceLastSync);
+
+    embedSyncTimer = setTimeout(() => {
+        lastEmbedSyncTime = Date.now();
+        performEmbedSync();
+    }, delay);
+};
+
+// Update sync status UI
+const updateEmbedSyncStatus = (status, error = null) => {
+    const statusEl = document.querySelector('#embedSyncStatus');
+    const lastSyncEl = document.querySelector('#embedLastSynced');
+    
+    if (statusEl) {
+        statusEl.classList.remove('syncing', 'synced', 'error');
+        if (status === 'syncing') {
+            statusEl.classList.add('syncing');
+            statusEl.textContent = 'Syncing...';
+        } else if (status === 'synced') {
+            statusEl.classList.add('synced');
+            statusEl.textContent = 'Synced';
+        } else if (status === 'error') {
+            statusEl.classList.add('error');
+            statusEl.textContent = `Error: ${error || 'Unknown'}`;
+        }
+    }
+
+    if (lastSyncEl && settings.embedLastSynced) {
+        const date = new Date(settings.embedLastSynced);
+        lastSyncEl.textContent = `Last synced: ${date.toLocaleString()}`;
+    }
+};
+
+// Manual sync trigger
+const triggerManualSync = async () => {
+    updateEmbedSyncStatus('syncing');
+    lastEmbedSyncTime = 0; // Reset rate limit for manual sync
+    await performEmbedSync();
 };
 
 const buildItemFromContent = async (filePath, content, stat, existing) => {
@@ -2597,7 +2774,11 @@ const initEventDelegation = () => {
             toggleDone(itemId);
         } else if (action === 'open-web') {
             const url = target.dataset.url;
-            if (url) window.open(url, '_blank');
+            if (url && window.appInfo?.openExternalUrl) {
+                window.appInfo.openExternalUrl(url);
+            } else if (url) {
+                window.open(url, '_blank');
+            }
         } else if (action === 'show-folder') {
             const path = target.dataset.path;
             if (path && window.beatmapApi?.showItemInFolder) {
@@ -2651,6 +2832,11 @@ const init = async () => {
                 document.documentElement.style.setProperty('--title-lines', height > 160 ? 4 : 2);
             } catch (e) { }
         }
+        // Generate userId if not present (first run)
+        if (!settings.userId) {
+            settings.userId = generateUserId();
+            persistSettings();
+        }
     };
 
     const saveSettings = () => {
@@ -2693,6 +2879,40 @@ const init = async () => {
         const heightValue = document.querySelector('#listItemHeightValue');
         if (heightSlider) heightSlider.value = settings.listItemHeight ?? 240;
         if (heightValue) heightValue.textContent = `${settings.listItemHeight ?? 240}px`;
+
+        // Update user ID display
+        const userIdValue = document.querySelector('#userIdValue');
+        if (userIdValue) userIdValue.textContent = settings.userId || 'Not generated';
+
+        // Update embed settings
+        const apiKeyValue = document.querySelector('#apiKeyValue');
+        if (apiKeyValue) apiKeyValue.textContent = settings.embedApiKey || 'Not generated';
+
+        const embedUrlValue = document.querySelector('#embedUrlValue');
+        if (embedUrlValue) {
+            embedUrlValue.textContent = settings.userId 
+                ? `${settings.embedSyncUrl}/embed/${settings.userId}`
+                : 'Generate user ID first';
+        }
+
+        const embedLastSynced = document.querySelector('#embedLastSynced');
+        if (embedLastSynced) {
+            if (settings.embedLastSynced) {
+                const date = new Date(settings.embedLastSynced);
+                embedLastSynced.textContent = `Last synced: ${date.toLocaleString()}`;
+            } else {
+                embedLastSynced.textContent = 'Not synced yet';
+            }
+        }
+
+        // Embed toggles
+        const embedShowTodoList = document.querySelector('#embedShowTodoList');
+        const embedShowCompletedList = document.querySelector('#embedShowCompletedList');
+        const embedShowProgressStats = document.querySelector('#embedShowProgressStats');
+
+        if (embedShowTodoList) embedShowTodoList.checked = settings.embedShowTodoList;
+        if (embedShowCompletedList) embedShowCompletedList.checked = settings.embedShowCompletedList;
+        if (embedShowProgressStats) embedShowProgressStats.checked = settings.embedShowProgressStats;
     };
 
     // Tab Listeners
@@ -2786,6 +3006,95 @@ const init = async () => {
             }
         });
     }
+
+    // User ID copy functionality
+    const userIdDisplay = document.querySelector('#userIdDisplay');
+    if (userIdDisplay) {
+        const copyUserId = async () => {
+            if (settings.userId) {
+                try {
+                    await navigator.clipboard.writeText(settings.userId);
+                    // Visual feedback
+                    userIdDisplay.classList.add('copied');
+                    setTimeout(() => userIdDisplay.classList.remove('copied'), 1500);
+                } catch (e) {
+                    console.error('Failed to copy user ID:', e);
+                }
+            }
+        };
+        userIdDisplay.addEventListener('click', copyUserId);
+        userIdDisplay.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                copyUserId();
+            }
+        });
+    }
+
+    // API Key copy functionality
+    const apiKeyDisplay = document.querySelector('#apiKeyDisplay');
+    if (apiKeyDisplay) {
+        const copyApiKey = async () => {
+            if (settings.embedApiKey) {
+                try {
+                    await navigator.clipboard.writeText(settings.embedApiKey);
+                    apiKeyDisplay.classList.add('copied');
+                    setTimeout(() => apiKeyDisplay.classList.remove('copied'), 1500);
+                } catch (e) {
+                    console.error('Failed to copy API key:', e);
+                }
+            }
+        };
+        apiKeyDisplay.addEventListener('click', copyApiKey);
+        apiKeyDisplay.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                copyApiKey();
+            }
+        });
+    }
+
+    // Embed URL copy functionality
+    const embedUrlDisplay = document.querySelector('#embedUrlDisplay');
+    if (embedUrlDisplay) {
+        const copyEmbedUrl = async () => {
+            if (settings.userId) {
+                const url = `${settings.embedSyncUrl}/embed/${settings.userId}`;
+                try {
+                    await navigator.clipboard.writeText(url);
+                    embedUrlDisplay.classList.add('copied');
+                    setTimeout(() => embedUrlDisplay.classList.remove('copied'), 1500);
+                } catch (e) {
+                    console.error('Failed to copy embed URL:', e);
+                }
+            }
+        };
+        embedUrlDisplay.addEventListener('click', copyEmbedUrl);
+        embedUrlDisplay.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                copyEmbedUrl();
+            }
+        });
+    }
+
+    // Embed sync now button
+    const embedSyncNowBtn = document.querySelector('#embedSyncNowBtn');
+    if (embedSyncNowBtn) {
+        embedSyncNowBtn.addEventListener('click', triggerManualSync);
+    }
+
+    // Embed settings toggles
+    ['embedShowTodoList', 'embedShowCompletedList', 'embedShowProgressStats'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('change', (e) => {
+                settings[id] = e.target.checked;
+                saveSettings();
+            });
+        }
+    });
+
     if (selectSongsDirBtn) {
         selectSongsDirBtn.addEventListener('click', async () => {
             if (window.beatmapApi?.selectDirectory) {

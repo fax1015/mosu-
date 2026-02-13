@@ -289,6 +289,83 @@
                     </div>
                 </div>
             </div>
+            <div class="settings-section">
+                <h3 class="settings-section-title">Embed Sync</h3>
+                <div class="settings-item">
+                    <div class="settings-info">
+                        <p class="settings-label">Your User ID</p>
+                        <p class="settings-description">Use this ID to sync your todo list to the embed page. Click to copy.</p>
+                        <div class="user-id-display" id="userIdDisplay" tabindex="0" role="button" aria-label="Copy user ID">
+                            <code id="userIdValue">Loading...</code>
+                            <svg class="copy-icon" viewBox="0 0 448 512" width="14" height="14">
+                                <path d="M384 336H192c-8.8 0-16-7.2-16-16V64c0-8.8 7.2-16 16-16h192c8.8 0 16 7.2 16 16v256c0 8.8-7.2 16-16 16zm32-288V352c0 17.7-14.3 32-32 32H192c-17.7 0-32-14.3-32-32V48c0-17.7 14.3-32 32-32h192c17.7 0 32 14.3 32 32zM96 480h256c17.7 0 32-14.3 32-32V128h32v320c0 35.3-28.7 64-64 64H96c-35.3 0-64-28.7-64-64V128h32v320c0 17.7 14.3 32 32 32z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-info">
+                        <p class="settings-label">API Key</p>
+                        <p class="settings-description">Your secret key for syncing. Keep this private. Click to copy.</p>
+                        <div class="user-id-display" id="apiKeyDisplay" tabindex="0" role="button" aria-label="Copy API key">
+                            <code id="apiKeyValue">Not generated</code>
+                            <svg class="copy-icon" viewBox="0 0 448 512" width="14" height="14">
+                                <path d="M384 336H192c-8.8 0-16-7.2-16-16V64c0-8.8 7.2-16 16-16h192c8.8 0 16 7.2 16 16v256c0 8.8-7.2 16-16 16zm32-288V352c0 17.7-14.3 32-32 32H192c-17.7 0-32-14.3-32-32V48c0-17.7 14.3-32 32-32h192c17.7 0 32 14.3 32 32zM96 480h256c17.7 0 32-14.3 32-32V128h32v320c0 35.3-28.7 64-64 64H96c-35.3 0-64-28.7-64-64V128h32v320c0 17.7 14.3 32 32 32z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-info">
+                        <p class="settings-label">Show Todo List</p>
+                        <p class="settings-description">Display your todo list on the embed page.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="embedShowTodoList">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-info">
+                        <p class="settings-label">Show Completed List</p>
+                        <p class="settings-description">Display your completed maps on the embed page.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="embedShowCompletedList">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-info">
+                        <p class="settings-label">Show Progress Stats</p>
+                        <p class="settings-description">Display progress statistics on the embed page.</p>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="embedShowProgressStats">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-info">
+                        <p class="settings-label">Sync Status</p>
+                        <p class="settings-description" id="embedLastSynced">Not synced yet</p>
+                        <span class="embed-sync-status" id="embedSyncStatus"></span>
+                    </div>
+                    <button type="button" class="secondary-button" id="embedSyncNowBtn">Sync Now</button>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-info">
+                        <p class="settings-label">Embed URL</p>
+                        <p class="settings-description">Use this URL to embed your tracker on other sites.</p>
+                        <div class="user-id-display" id="embedUrlDisplay" tabindex="0" role="button" aria-label="Copy embed URL">
+                            <code id="embedUrlValue">Loading...</code>
+                            <svg class="copy-icon" viewBox="0 0 448 512" width="14" height="14">
+                                <path d="M384 336H192c-8.8 0-16-7.2-16-16V64c0-8.8 7.2-16 16-16h192c8.8 0 16 7.2 16 16v256c0 8.8-7.2 16-16 16zm32-288V352c0 17.7-14.3 32-32 32H192c-17.7 0-32-14.3-32-32V48c0-17.7 14.3-32 32-32h192c17.7 0 32 14.3 32 32zM96 480h256c17.7 0 32-14.3 32-32V128h32v320c0 35.3-28.7 64-64 64H96c-35.3 0-64-28.7-64-64V128h32v320c0 17.7 14.3 32 32 32z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </dialog>
 

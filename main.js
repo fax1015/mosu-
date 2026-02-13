@@ -266,6 +266,39 @@ ipcMain.handle('select-directory', async () => {
 	return result.filePaths[0];
 });
 
+// Embed sync HTTP POST handler
+ipcMain.handle('embed-sync', async (_event, url, apiKey, data) => {
+	try {
+		const controller = new AbortController();
+		const timeoutId = setTimeout(() => controller.abort(), 30000); // 30 second timeout
+
+		const response = await net.fetch(url, {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+				'Authorization': `Bearer ${apiKey}`
+			},
+			body: JSON.stringify(data),
+			signal: controller.signal
+		});
+
+		clearTimeout(timeoutId);
+
+		const responseData = await response.json();
+		return { 
+			success: response.ok, 
+			status: response.status, 
+			data: responseData 
+		};
+	} catch (err) {
+		console.error('Embed sync error:', err);
+		return { 
+			success: false, 
+			error: err.name === 'AbortError' ? 'Request timeout' : (err.message || 'Network error')
+		};
+	}
+});
+
 app.on('window-all-closed', () => {
 	if (process.platform !== 'darwin') {
 		app.quit();

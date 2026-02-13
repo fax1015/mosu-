@@ -2041,6 +2041,107 @@ input:checked+.slider:before {
     font-variant-numeric: tabular-nums;
 }
 
+/* Settings Section Title */
+.settings-section-title {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    margin: 1.5rem 0 0.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--bg-quaternary);
+}
+
+.settings-section:first-child .settings-section-title {
+    margin-top: 0;
+}
+
+/* User ID Display */
+.user-id-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: var(--bg-tertiary);
+    border: 1px solid var(--bg-quaternary);
+    border-radius: 6px;
+    padding: 0.5rem 0.75rem;
+    margin-top: 0.5rem;
+    cursor: pointer;
+    transition: var(--transition);
+    max-width: 100%;
+}
+
+.user-id-display:hover {
+    background: var(--bg-quaternary);
+    border-color: var(--accent-primary);
+}
+
+.user-id-display:focus {
+    outline: none;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 2px rgba(255, 102, 170, 0.3);
+}
+
+.user-id-display code {
+    font-family: 'Torus', var(--font-family), sans-serif;
+    font-size: 0.85rem;
+    color: var(--text-primary);
+    background: none;
+    padding: 0;
+    word-break: break-all;
+}
+
+.user-id-display .copy-icon {
+    fill: var(--text-secondary);
+    flex-shrink: 0;
+    transition: var(--transition);
+}
+
+.user-id-display:hover .copy-icon {
+    fill: var(--accent-primary);
+}
+
+.user-id-display.copied {
+    border-color: var(--success, #66d966);
+    background: rgba(102, 217, 102, 0.1);
+}
+
+.user-id-display.copied code {
+    color: var(--success, #66d966);
+}
+
+.user-id-display.copied .copy-icon {
+    fill: var(--success, #66d966);
+}
+
+/* Embed Sync Status */
+.embed-sync-status {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    margin-top: 0.25rem;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.embed-sync-status.syncing {
+    background: rgba(255, 102, 170, 0.2);
+    color: var(--accent-primary);
+}
+
+.embed-sync-status.synced {
+    background: rgba(102, 217, 102, 0.2);
+    color: var(--success, #66d966);
+}
+
+.embed-sync-status.error {
+    background: rgba(214, 64, 64, 0.2);
+    color: var(--error);
+}
+
 .primary-button.danger {
     background: var(--error);
 }
